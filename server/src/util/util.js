@@ -99,7 +99,7 @@ export async function setAccountProperty(client, target, scope, prop, value){
 	// console.log(scope);
 	// console.log(prop);
 	// console.log(value);
-	if(target.constructor===Client) target = target.getAccountUsername();
+	if (target.constructor===Client) target = target.getAccountUsername();
 	console.log(client.accountToken);
 	let response = await fetch(`https://neomoth.dev/req/account/owop/set/${target}`, {
 		method: 'POST',

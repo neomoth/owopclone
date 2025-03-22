@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const webpack = require('webpack');
-const HtmlWebpackPlugin =  require('html-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 require('dotenv').config();
@@ -26,6 +26,7 @@ const config = {
 	},
 	module: {
 		rules: [{
+			test: /\.js$/,
 			include: path.resolve(srcDir, 'js'),
 			use: [{
 				loader: 'babel-loader',
@@ -33,7 +34,7 @@ const config = {
 					presets: ['env']
 				}
 			}]
-		},{
+		}, {
 			/* Polyfills shouldn't be merged with app.js, resolve them with an url */
 			include: path.resolve(srcDir, 'js', 'polyfill'),
 			use: [{
@@ -43,7 +44,7 @@ const config = {
 					name: '[name].[ext]'
 				}
 			}]
-		},{
+		}, {
 			include: path.resolve(srcDir, 'img'),
 			use: [{
 				loader: 'file-loader',
@@ -52,7 +53,7 @@ const config = {
 					name: '[name].[ext]'
 				}
 			}]
-		},{
+		}, {
 			include: path.resolve(srcDir, 'audio'),
 			use: [{
 				loader: 'file-loader',
@@ -61,7 +62,7 @@ const config = {
 					name: '[name].[ext]'
 				}
 			}]
-		},{
+		}, {
 			include: path.resolve(srcDir, 'font'),
 			use: [{
 				loader: 'file-loader',
@@ -70,7 +71,7 @@ const config = {
 					name: '[name].[ext]'
 				}
 			}]
-		},{
+		}, {
 			include: path.resolve(srcDir, 'css'),
 			use: [{
 				loader: 'css-loader',
@@ -78,7 +79,7 @@ const config = {
 					/*root: '..',*/
 					importLoaders: 1
 				}
-			},{
+			}, {
 				loader: 'postcss-loader'
 			}]/*ExtractTextPlugin.extract({
 				fallback: 'style-loader',
@@ -92,7 +93,7 @@ const config = {
 		// 		{ from: path.resolve(__dirname, 'static'), to: './' }
 		// 	]
 		// }),
-		new CopyWebpackPlugin([{from: 'static'}]),
+		new CopyWebpackPlugin([{ from: 'static' }]),
 		/*new webpack.optimize.CommonsChunkPlugin({
 			name: 'libs',
 			filename: 'libs.js',

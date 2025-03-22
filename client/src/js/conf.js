@@ -1,8 +1,29 @@
-'use strict';
-import { eventSys, PublicAPI } from './global';
-import { propertyDefaults, storageEnabled } from './util/misc';
-import toolSet from '../img/toolset.png';
-import unloadedPat from '../img/unloaded.png';
+"use strict";
+
+import { eventSys, propertyDefaults, getTime, cookiesEnabled, storageEnabled, absMod, escapeHTML, mkHTML, setTooltip, waitFrames, line, loadScript, getDefaultWorld, getCookie } from "./util.js";
+import toolSet from "../img/toolset.png";
+import unloadedPat from "../img/unloaded.png";
+import launchSoundUrl from "../audio/launch.mp3";
+import placeSoundUrl from "../audio/place.mp3";
+import clickSoundUrl from "../audio/click.mp3";
+
+export const sounds = {
+	play: function (sound) {
+		sound.currentTime = 0;
+		if (options.enableSounds) {
+			sound.play();
+		}
+	}
+};
+
+sounds.launch = new Audio();
+sounds.launch.src = launchSoundUrl;
+sounds.place = new Audio();
+sounds.place.src = placeSoundUrl;
+sounds.click = new Audio();
+sounds.click.src = clickSoundUrl;
+
+export const activeFx = [];
 
 export let protocol = null;
 
@@ -17,9 +38,7 @@ export const RANK = {
 	ADMIN: 4,
 	DEVELOPER: 5,
 	OWNER: 6,
-}
-
-PublicAPI.RANK = RANK;
+};
 
 export const EVENTS = {
 	loaded: ++evtId,
@@ -75,7 +94,7 @@ export const EVENTS = {
 		maxCount: ++evtId,
 		donUntil: ++evtId,
 	}
-}
+};
 
 export const PUBLIC_EVENTS = {
 	loaded: EVENTS.loaded,
@@ -93,24 +112,109 @@ export const PUBLIC_EVENTS = {
 	disconnected: EVENTS.net.disconnected,
 };
 
-PublicAPI.events = PUBLIC_EVENTS;
+export const PublicAPI = window.NWOP = window.WorldOfPixels = {
+	RANK: RANK,
+	events: PUBLIC_EVENTS,
+	util: {
+		getTime,
+		cookiesEnabled,
+		storageEnabled,
+		absMod,
+		escapeHTML,
+		mkHTML,
+		setTooltip,
+		waitFrames,
+		line,
+		loadScript
+	}
+};
+
+export const cursors = {
+	set: new Image(),
+	cursor: { imgpos: [0, 0], hotspot: [0, 0] },
+	move: { imgpos: [1, 0], hotspot: [18, 18] },
+	pipette: { imgpos: [0, 1], hotspot: [0, 28] },
+	erase: { imgpos: [0, 2], hotspot: [4, 26] },
+	zoom: { imgpos: [1, 2], hotspot: [19, 10] },
+	fill: { imgpos: [1, 1], hotspot: [3, 29] },
+	brush: { imgpos: [0, 3], hotspot: [0, 26] },
+	select: { imgpos: [2, 0], hotspot: [0, 0] }, // needs better hotspot
+	selectprotect: { imgpos: [4, 0], hotspot: [0, 0] },
+	copy: { imgpos: [3, 0], hotspot: [0, 0] }, // and this
+	paste: { imgpos: [3, 1], hotspot: [0, 0] }, // this too
+	cut: { imgpos: [3, 2], hotspot: [11, 5] },
+	wand: { imgpos: [3, 3], hotspot: [0, 0] },
+	circle: { imgpos: [4, 3], hotspot: [0, 0] },
+	rect: { imgpos: [4, 2], hotspot: [0, 0] },
+	write: { imgpos: [0, 3], hotspot: [0, 0] },
+	shield: { imgpos: [2, 3], hotspot: [18, 18] },
+	kick: { imgpos: [2, 1], hotspot: [3, 6] },
+	ban: { imgpos: [2, 2], hotspot: [10, 4] },
+	write: { imgpos: [1, 3], hotspot: [10, 4] } // fix hotspot
+}
+
+export const elements = {
+	viewport: null,
+	xyDisplay: null,
+	chatInput: null,
+	chat: null,
+	devChat: null,
+};
+
+export const KeyCode = {
+	// Alphabet
+	a: 65, b: 66, c: 67, d: 68, e: 69, f: 70, g: 71, h: 72, i: 73,
+	j: 74, k: 75, l: 76, m: 77, n: 78, o: 79, p: 80, q: 81, r: 82,
+	s: 83, t: 84, u: 85, v: 86, w: 87, x: 88, y: 89, z: 90,
+
+	// Numbers (Top row)
+	zero: 48, one: 49, two: 50, three: 51, four: 52,
+	five: 53, six: 54, seven: 55, eight: 56, nine: 57,
+
+	// Special characters and symbols
+	backtick: 192, tilde: 192, dash: 189, underscore: 189,
+	equals: 187, plus: 187, leftBracket: 219, leftCurly: 219,
+	rightBracket: 221, rightCurly: 221, backslash: 220, pipe: 220,
+	semicolon: 186, colon: 186, quote: 222, doubleQuote: 222,
+	comma: 188, lessThan: 188, period: 190, greaterThan: 190,
+	slash: 191, question: 191, exclamation: 49, at: 50,
+	hash: 51, dollar: 52, percent: 53, caret: 54,
+	ampersand: 55, asterisk: 56, leftParen: 57, rightParen: 48,
+
+	// Function keys
+	f1: 112, f2: 113, f3: 114, f4: 115, f5: 116, f6: 117,
+	f7: 118, f8: 119, f9: 120, f10: 121, f11: 122, f12: 123,
+
+	// Control keys
+	enter: 13, space: 32, escape: 27, backspace: 8, tab: 9,
+	shift: 16, ctrl: 17, alt: 18, capsLock: 20, pause: 19,
+
+	// Navigation keys
+	insert: 45, home: 36, delete: 46, end: 35,
+	pageUp: 33, pageDown: 34,
+
+	// Arrow keys
+	arrowUp: 38, arrowDown: 40, arrowLeft: 37, arrowRight: 39,
+
+	// Numpad keys
+	numpad0: 96, numpad1: 97, numpad2: 98, numpad3: 99,
+	numpad4: 100, numpad5: 101, numpad6: 102, numpad7: 103,
+	numpad8: 104, numpad9: 105,
+	numpadMultiply: 106, numpadAdd: 107, numpadSubtract: 109,
+	numpadDecimal: 110, numpadDivide: 111, numpadEnter: 13
+};
+
+PublicAPI.cursors = cursors;
+
+export const AnnoyingAPI = { ws: window.WebSocket };
 
 let userOptions = {};
 
-if(storageEnabled()){
-	try{
+if (storageEnabled()) {
+	try {
 		userOptions = JSON.parse(localStorage.getItem('nwopOptions') || '{}');
-	}catch(e){
+	} catch (e) {
 		console.error('Error parsing user options.', e);
-	}
-}
-
-let shouldFool = false; //(d=>d,getMonth()==3&&d.getDate()==1)(newDate())
-function getDefaultWorld(){
-	try{
-		return shouldFool?'aprilFools':'main';
-	}catch(e){
-		return 'main';
 	}
 }
 
@@ -137,12 +241,40 @@ export const options = propertyDefaults(userOptions, {
 	toolSetUrl: toolSet,
 	unloadedPatternUrl: unloadedPat,
 	noUi: false,
-	fool: shouldFool,
 	backgroundUrl: null,
 	hexCoords: false,
 	showProtectionOutlines: true,
 	showPlayers: true,
 });
+
+export const misc = {
+	localStorage: storageEnabled() && window.localStorage,
+	_world: null,
+	lastXYDisplay: [-1, -1],
+	devRecvReader: msg => { },
+	chatPostFormatRecvModifier: msg => msg,
+	chatRecvModifier: msg => msg,
+	chatSendModifier: msg => msg,
+	exceptionTimeout: null,
+	worldPasswords: {},
+	tick: 0,
+	urlWorldName: null,
+	connecting: false,
+	tickInterval: null,
+	lastMessage: null,
+	lastCleanup: 0,
+	set world(value) {
+		PublicAPI.world = getNewWorldApi();
+		return this._world = value;
+	},
+	get world() { return this._world; },
+	guiShown: false,
+	cookiesEnabled: cookiesEnabled(),
+	storageEnabled: storageEnabled(),
+	showEUCookieNag: !options.noUi && cookiesEnabled() && getCookie('nagAccepted') !== 'true',
+	usingFirefox: navigator.userAgent.indexOf('Firefox') !== -1,
+	donTimer: 0
+};
 
 PublicAPI.options = options;
 

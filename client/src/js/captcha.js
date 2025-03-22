@@ -1,9 +1,8 @@
-'use strict';
-import { EVENTS as e } from './conf.js';
-import { eventSys } from './global.js';
-import { mkHTML, loadScript, setCookie } from './util/misc.js';
-import { windowSys, GUIWindow, UtilDialog } from './windowsys.js';
-import { misc } from './main.js';
+"use strict";
+
+import { EVENTS as e } from "./conf.js";
+import { mkHTML, loadScript, eventSys } from "./util.js";
+import { windowSys, GUIWindow } from "./windowsys.js";
 
 const SITEKEY = "6LcgvScUAAAAAARUXtwrM8MP0A0N70z4DHNJh-KI";
 
@@ -11,16 +10,16 @@ function loadCaptcha(onload) {
 	if (!window.grecaptcha) {
 		if (window.callback) {
 			/* Hacky solution for race condition */
-			window.callback = function() {
+			window.callback = function () {
 				onload();
 				this();
 			}.bind(window.callback);
 		} else {
-        	window.callback = function() {
-	            delete window.callback;
-            	onload();
-        	};
-        	eventSys.emit(e.misc.loadingCaptcha);
+			window.callback = function () {
+				delete window.callback;
+				onload();
+			};
+			eventSys.emit(e.misc.loadingCaptcha);
 			loadScript("https://www.google.com/recaptcha/api.js?onload=callback&render=explicit");
 		}
 	} else {
@@ -30,7 +29,7 @@ function loadCaptcha(onload) {
 
 function requestVerification() {
 	windowSys.addWindow(new GUIWindow("Verification needed", {
-			centered: true
+		centered: true
 	}, wdow => {
 		let id = grecaptcha.render(wdow.addObj(mkHTML("div", {
 			id: "captchawdow"

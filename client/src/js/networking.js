@@ -1,6 +1,7 @@
-'use strict';
-import { EVENTS as e, protocol } from './conf';
-import { eventSys, PublicAPI, AnnoyingAPI as aa } from './global';
+"use strict";
+
+import { EVENTS as e, AnnoyingAPI as aa } from "./conf.js";
+import { eventSys } from "./util.js";
 
 export const net = {
 	currentServer: null,
@@ -9,11 +10,11 @@ export const net = {
 	connect
 }
 
-function isConnected(){
+function isConnected() {
 	return net.protocol !== null && net.protocol.isConnected();
 }
 
-function connect(server, worldName, captcha){
+function connect(server, worldName, captcha) {
 	eventSys.emit(e.net.connecting, server);
 	net.connection = new aa.ws(server.url);
 	net.connection.binaryType = 'arraybuffer';

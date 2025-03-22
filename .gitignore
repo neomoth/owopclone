@@ -1,7 +1,7 @@
 server/.env
 server/config.json
 server/node_modules/
-server/data/*
+server/data/
 server/package-lock.json
 client/.env
 client/dist/
