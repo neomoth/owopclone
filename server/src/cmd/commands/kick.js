@@ -62,4 +62,4 @@ export default {
 			text: `Kicked ${target.uid}${reason ? ` with reason: ${reason}.` : "."}`
 		});
 	}
-}                                       
+}

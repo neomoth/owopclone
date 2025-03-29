@@ -1,13 +1,12 @@
-'use strict';
-import { protocol, EVENTS as e, options, RANK } from './conf';
-import { eventSys } from './global';
-import { colorUtils } from './util/color';
-import { net } from './networking';
-import { camera, isVisible, renderer } from './canvas_renderer';
-import { mouse, PM, sounds } from './main';
-import { player } from './local_player';
-import { Player } from './Player';
-import { Fx } from './Fx';
+"use strict";
+
+import { protocol, EVENTS as e, options, RANK, sounds, camera } from "./conf.js";
+import { colorUtils, eventSys } from "./util.js";
+import { net } from "./networking.js";
+import { isVisible, renderer } from "./canvas_renderer.js";
+import { player } from "./local_player.js";
+import { Player } from "./Player.js";
+import { Fx } from "./Fx.js";
 
 let lastPlace = 0;
 
@@ -61,6 +60,7 @@ export class Chunk {
 		eventSys.emit(e.net.chunk.unload, this);
 	}
 }
+
 Chunk.dir = {
 	UP: 0b1000,
 	RIGHT: 0b0100,
@@ -231,7 +231,7 @@ export class World {
 
 		clearTimeout(this.pathUpdaterTimeout);
 		this.pathUpdaterTimeout = setTimeout(() => {
-			this.pathFx.update({path: this.makeLockedChunksPath()});
+			this.pathFx.update({ path: this.makeLockedChunksPath() });
 			renderer.render(renderer.rendertype.FX);
 		}, 100);
 	}
@@ -258,8 +258,6 @@ export class World {
 				chunksUpdated[key] = chunk;
 				// console.log(t);
 				chunk.update(t.x, t.y, t.rgb);
-				if(t.id!==player.id) PM.unsetPixel(t.x, t.y, t.rgb);
-				PM.setPixel(t.x, t.y, t.rgb);
 			}
 		}
 		for (let c in chunksUpdated) {
@@ -279,7 +277,7 @@ export class World {
 				player = this.players[id] = new Player(u.x, u.y, u.rgb, u.tool, id, u.nick);
 			}
 			if (!rendered && (isVisible(player.endX / 16, player.endY / 16, 4, 4)
-					|| isVisible(player.x / 16, player.y / 16, 4, 4))) {
+				|| isVisible(player.x / 16, player.y / 16, 4, 4))) {
 				rendered = true;
 				renderer.render(renderer.rendertype.FX);
 			}
@@ -308,12 +306,11 @@ export class World {
 		let chunk = this.chunks[`${Math.floor(x / chunkSize)},${Math.floor(y / chunkSize)}`];
 		if (chunk && (!chunk.locked || player.rank >= RANK.MODERATOR)) {
 			let oldPixel = this.getPixel(x, y, chunk);
-			if (!oldPixel || (oldPixel[0] === color[0] && oldPixel[1] === color[1] && oldPixel[2] === color[2])
-					|| !net.protocol.updatePixel(x, y, color, () => {
-				chunk.update(x, y, colorUtils.u24_888(oldPixel[0], oldPixel[1], oldPixel[2]));
-				eventSys.emit(e.renderer.updateChunk, chunk);
-			})) {
-				return false;
+			if (!oldPixel || (oldPixel[0] === color[0] && oldPixel[1] === color[1] && oldPixel[2] === color[2])) {
+				return net.protocol.updatePixel(x, y, color, () => {
+					chunk.update(x, y, colorUtils.u24_888(oldPixel[0], oldPixel[1], oldPixel[2]));
+					eventSys.emit(e.renderer.updateChunk, chunk);
+				});
 			}
 			if (!noUndo) {
 				oldPixel.push(x, y, time);

@@ -1,36 +1,16 @@
-'use strict';
-import { colorUtils as color } from './util/color';
-import { eventSys, PublicAPI } from './global';
-import { EVENTS as e, protocol, options } from './conf';
-import { elements, misc } from './main';
-import { player } from './local_player';
-import { activeFx } from './Fx';
-import { getTime } from './util/misc';
-import { lerp } from './util/Lerp';
-import { tools } from './tools';
+"use strict";
 
-export { centerCameraTo, moveCameraBy, moveCameraTo, isVisible };
+import { EVENTS as e, protocol, options, elements, PublicAPI, activeFx, misc, cameraValues, camera } from "./conf.js";
+import { colorUtils as color, eventSys, getTime } from "./util.js";
 
-const cameraValues = {
-	x: 0,
-	y: 0,
-	zoom: -1
-}
-
-export const camera = {
-	get x(){ return cameraValues.x; },
-	get y(){ return cameraValues.y; },
-	get zoom(){ return cameraValues.zoom; },
-	set zoom(z){
-		z = Math.min(options.zoomLimitMax, Math.max(options.zoomLimitMin, z));
-		if(z!==cameraValues.zoom){
-			let center = getCenterPixel();
-			cameraValues.zoom = z;
-			centerCameraTo(center[0], center[1]);
-			eventSys.emit(e.camera.zoom, z);
-		}
-	},
-	isVisible
+export function setZoom(z) {
+	z = Math.min(options.zoomLimitMax, Math.max(options.zoomLimitMin, z));
+	if (z !== cameraValues.zoom) {
+		let x = Math.round(cameraValues.x + window.innerWidth / camera.zoom / 2);
+		let y = Math.round(cameraValues.y + window.innerHeight / camera.zoom / 2);
+		centerCameraTo(x, y);
+		eventSys.emit(e.camera.zoom, z);
+	}
 }
 
 const rendererValues = {
@@ -49,22 +29,19 @@ const rendererValues = {
 
 export const renderer = {
 	rendertype: {
-		ALL:	0b11,
-		FX: 	0b01,
-		WORLD:	0b10,
+		ALL: 0b11,
+		FX: 0b01,
+		WORLD: 0b10,
 	},
 	patterns: {
-		get unloaded(){ return rendererValues.unloadedPattern; },
+		get unloaded() { return rendererValues.unloadedPattern; },
 	},
 	render: requestRender,
 	showGrid: setGridVisibility,
-	get gridShown(){ return rendererValues.gridShown; },
+	get gridShown() { return rendererValues.gridShown; },
 	updateCamera: onCameraMove,
 	unloadFarClusters: unloadFarClusters,
 };
-
-PublicAPI.camera = camera;
-PublicAPI.renderer = renderer;
 
 class BufView {
 	constructor(u32data, x, y, w, h, realw) {
@@ -149,12 +126,12 @@ class ChunkCluster {
 							this.ctx.fillStyle = color.toHTML(current[3]);
 						}
 						switch (current[0]) {
-						case 0:
-							this.ctx.fillRect(c.view.offx + current[1], c.view.offy + current[2], 1, 1);
-							break;
-						case 1:
-							this.ctx.fillRect(c.view.offx, c.view.offy, s, s);
-							break;
+							case 0:
+								this.ctx.fillRect(c.view.offx + current[1], c.view.offy + current[2], 1, 1);
+								break;
+							case 1:
+								this.ctx.fillRect(c.view.offx, c.view.offy, s, s);
+								break;
 						}
 					}
 					c.view.changes = [];
@@ -212,12 +189,12 @@ class ChunkCluster {
 }
 
 /* Draws white text with a black border */
-export function drawText(ctx, str, x, y, centered){
+export function drawText(ctx, str, x, y, centered) {
 	ctx.strokeStyle = "#000000",
-	ctx.fillStyle = "#FFFFFF",
-	ctx.lineWidth = 2.5,
-	ctx.globalAlpha = 0.5;
-	if(centered) {
+		ctx.fillStyle = "#FFFFFF",
+		ctx.lineWidth = 2.5,
+		ctx.globalAlpha = 0.5;
+	if (centered) {
 		x -= ctx.measureText(str).width >> 1;
 	}
 	ctx.strokeText(str, x, y);
@@ -225,15 +202,15 @@ export function drawText(ctx, str, x, y, centered){
 	ctx.fillText(str, x, y);
 }
 
-function isVisible(x, y, w, h) {
-	if(document.visibilityState === "hidden") return;
-	let cx    = camera.x;
-	let cy    = camera.y;
+export function isVisible(x, y, w, h) {
+	if (document.visibilityState === "hidden") return;
+	let cx = camera.x;
+	let cy = camera.y;
 	let czoom = camera.zoom;
-	let cw    = window.innerWidth;
-	let ch    = window.innerHeight;
+	let cw = window.innerWidth;
+	let ch = window.innerHeight;
 	return x + w > cx && y + h > cy &&
-	       x <= cx + cw / czoom && y <= cy + ch / czoom;
+		x <= cx + cw / czoom && y <= cy + ch / czoom;
 }
 
 export function unloadFarClusters() { /* Slow? */
@@ -258,7 +235,6 @@ export function unloadFarClusters() { /* Slow? */
 		}
 	}
 }
-
 
 function render(type) {
 	let time = getTime(true);
@@ -356,12 +332,12 @@ function render(type) {
 
 		for (let i = 0; i < activeFx.length; i++) {
 			switch (activeFx[i].render(ctx, time)) {
-			case 0: /* Anim not finished */
-				needsRender |= renderer.rendertype.FX;
-				break;
-			case 2: /* Obj deleted from array, prevent flickering */
-				--i;
-				break;
+				case 0: /* Anim not finished */
+					needsRender |= renderer.rendertype.FX;
+					break;
+				case 2: /* Obj deleted from array, prevent flickering */
+					--i;
+					break;
 			}
 		}
 		ctx.globalAlpha = 1;
@@ -390,12 +366,13 @@ function renderPlayer(targetPlayer, fontsize) {
 	let camx = camera.x * 16;
 	let camy = camera.y * 16;
 	let zoom = camera.zoom;
-	let ctx  = rendererValues.animContext;
+	let ctx = rendererValues.animContext;
 	let cnvs = ctx.canvas;
 	let tool = targetPlayer.tool;
+	// this only ever becomes a problem if you modify your client to reduce the amount of cursors and the server asks you to render a tool you removed
 	if (!tool) {
 		/* Render the default tool if the selected one isn't defined */
-		tool = tools['cursor'];
+		// tool = tools['cursor'];
 	}
 	let toolwidth = tool.cursor.width / 16 * zoom;
 	let toolheight = tool.cursor.height / 16 * zoom;
@@ -405,8 +382,8 @@ function renderPlayer(targetPlayer, fontsize) {
 	let cx = ((x - camx) - tool.offset[0]) * (zoom / 16) | 0;
 	let cy = ((y - camy) - tool.offset[1]) * (zoom / 16) | 0;
 
-	if(cx < -toolwidth || cy < -toolheight
-	|| cx > cnvs.width || cy > cnvs.height) {
+	if (cx < -toolwidth || cy < -toolheight
+		|| cx > cnvs.width || cy > cnvs.height) {
 		return true;
 	}
 
@@ -539,31 +516,25 @@ function onCameraMove() {
 	requestRender(renderer.rendertype.FX);
 }
 
-function getCenterPixel() {
-	let x = Math.round(cameraValues.x + window.innerWidth / camera.zoom / 2);
-	let y = Math.round(cameraValues.y + window.innerHeight / camera.zoom / 2);
-	return [x, y];
-}
-
-function centerCameraTo(x, y) {
-	if(typeof(x) == "number" && !isNaN(x)){
+export function centerCameraTo(x, y) {
+	if (typeof (x) == "number" && !isNaN(x)) {
 		cameraValues.x = -(window.innerWidth / camera.zoom / 2) + x;
 	}
-	
-	if(typeof(y) == "number" && !isNaN(y)){
+
+	if (typeof (y) == "number" && !isNaN(y)) {
 		cameraValues.y = -(window.innerHeight / camera.zoom / 2) + y;
 	}
-	
+
 	onCameraMove();
 }
 
-function moveCameraBy(x, y) {
+export function moveCameraBy(x, y) {
 	cameraValues.x += x;
 	cameraValues.y += y;
 	onCameraMove();
 }
 
-function moveCameraTo(x, y) {
+export function moveCameraTo(x, y) {
 	cameraValues.x = x;
 	cameraValues.y = y;
 	onCameraMove();
@@ -638,7 +609,7 @@ eventSys.once(e.init, () => {
 	rendererValues.animContext = elements.animCanvas.getContext("2d", { alpha: false });
 	window.addEventListener("resize", onResize);
 	onResize();
-	camera.zoom = options.defaultZoom;
+	cameraValues.zoom = options.defaultZoom;
 	centerCameraTo(0, 0);
 
 	const mkPatternFromUrl = (url, cb) => {
@@ -673,3 +644,6 @@ eventSys.once(e.init, () => {
 	}
 	eventSys.once(e.misc.toolsInitialized, frameLoop);
 });
+
+PublicAPI.camera = camera;
+PublicAPI.renderer = renderer;

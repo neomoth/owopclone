@@ -1,7 +1,8 @@
-import { camera } from './canvas_renderer.js';
-import { elements } from './main.js';
-import { eventSys } from './global.js';
-import { EVENTS as e } from './conf.js';
+"use strict";
+
+import { EVENTS as e, elements, camera } from "./conf.js";
+import { eventSys } from "./util.js";
+
 export function stickyimg(path, w, h, o) {
 	// if (OWOP.spawnbanner) {
 	//     return;
@@ -22,8 +23,8 @@ export function stickyimg(path, w, h, o) {
 	elem.style.backgroundImage = `url("${path}")`;
 	var move = function () {
 		var sc = camera.zoom / 16;
-		var tx = ((-camera.x - ((w/16)/2)) * camera.zoom);
-		var ty = ((-camera.y - ((h/16)/2)) * camera.zoom);
+		var tx = ((-camera.x - ((w / 16) / 2)) * camera.zoom);
+		var ty = ((-camera.y - ((h / 16) / 2)) * camera.zoom);
 		if (tx > -w * sc && ty > -h * sc && tx < window.innerWidth && ty < window.innerHeight) {
 			if (sc > 1.0 && !ismag) {
 				ismag = true;

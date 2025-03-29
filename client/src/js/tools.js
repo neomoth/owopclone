@@ -1,752 +1,25 @@
-'use strict';
-import { PublicAPI, eventSys } from './global.js';
-import { EVENTS as e, protocol, options, RANK } from './conf.js';
-import { absMod, setTooltip, mkHTML, line } from './util/misc.js';
-import { cursors } from './tool_renderer.js';
-import { net } from './networking.js';
-import { player } from './local_player.js';
-import { camera, moveCameraTo, moveCameraBy, renderer, drawText } from './canvas_renderer.js';
-import { windowSys, GUIWindow, UtilDialog } from './windowsys.js';
-import { misc, elements, mouse, sounds, keysDown, PM } from './main.js';
-import { PLAYERFX } from './Fx.js';
+"use strict";
+
+import { EVENTS as e, protocol, options, RANK, elements, PublicAPI, cursors, sounds, misc, keysDown, camera, mouse } from "./conf.js";
+import { absMod, setTooltip, line, eventSys } from "./util.js";
+import { net } from "./networking.js";
+import { player } from "./local_player.js";
+import { moveCameraBy, renderer, drawText, setZoom } from "./canvas_renderer.js";
+import { windowSys, GUIWindow } from "./windowsys.js";
+import { PM } from "./pixelTools.js";
+import { PLAYERFX } from "./Fx.js";
+import newText from "../json/newText.json";
+import cyrillic from "../json/cyrillic.json";
 
 export const tools = {};
 export let toolsWindow = null;
 export let toolOptsWindow = null;
 let windowShown = false;
 
-const textData = {}
-
-textData.newText = {
-	data: {
-		gap: 1,
-		space: 1,
-		height: 8,
-		bottom: 6
-	},
-	" ": {
-		width: 1,
-		height: 8,
-		skip: 0,
-		text: "00000000"
-	},
-	"'": {
-		width: 1,
-		height: 2,
-		skip: 1,
-		text: "11"
-	},
-	"\"": {
-		width: 3,
-		height: 2,
-		skip: 1,
-		text: "101101"
-	},
-	"?": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110001010000010`
-	},
-	"!": {
-		width: 1,
-		height: 5,
-		skip: 1,
-		text: `11101`
-	},
-	",": {
-		width: 1,
-		height: 2,
-		skip: 5,
-		text: `11`
-	},
-	".": {
-		width: 1,
-		height: 1,
-		skip: 5,
-		text: `1`
-	},
-	"&": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `010101010101011`
-	},
-	"[": {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `1110101011`
-	},
-	"]": {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `1101010111`
-	},
-	"{": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `011010110010011`
-	},
-	"}": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110010011010110`
-	},
-	"(": {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `0110101001`
-	},
-	")": {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `1001010110`
-	},
-	"/": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `001001010100100`
-	},
-	"\\": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `100100010001001`
-	},
-	":": {
-		width: 1,
-		height: 3,
-		skip: 3,
-		text: `101`
-	},
-	";": {
-		width: 1,
-		height: 4,
-		skip: 3,
-		text: `1011`
-	},
-	"+": {
-		width: 3,
-		height: 3,
-		skip: 2,
-		text: `010111010`
-	},
-	"-": {
-		width: 3,
-		height: 1,
-		skip: 3,
-		text: `111`
-	},
-	"*": {
-		width: 3,
-		height: 3,
-		skip: 2,
-		text: `101010101`
-	},
-	"%": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101001010100101`
-	},
-	"_": {
-		width: 3,
-		height: 1,
-		skip: 5,
-		text: `111`
-	},
-	"=": {
-		width: 3,
-		height: 3,
-		skip: 5,
-		text: `111000111`
-	},
-	"0": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111101101101111"
-	},
-	"1": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "010110010010111"
-	},
-	"2": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111001111100111"
-	},
-	"3": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111001111001111"
-	},
-	"4": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "101101111001001"
-	},
-	"5": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111100111001111"
-	},
-	"6": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111100111101111"
-	},
-	"7": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111001001001001"
-	},
-	"8": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111101111101111"
-	},
-	"9": {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "111101111001111"
-	},
-	a: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: "011101011"
-	},
-	b: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `100100110101110`
-	},
-	c: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `011100011`
-	},
-	d: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `001001011101011`
-	},
-	e: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `010110011`
-	},
-	f: {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `0110111010`
-	},
-	g: {
-		width: 3,
-		height: 5,
-		skip: 3,
-		text: `011101011001110`
-	},
-	h: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `100100110101101`
-	},
-	i: {
-		width: 1,
-		height: 5,
-		skip: 1,
-		text: `10111`
-	},
-	j: {
-		width: 2,
-		height: 7,
-		skip: 1,
-		text: `01000101010110`
-	},
-	k: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `100100101110101`
-	},
-	l: {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `1010101001`
-	},
-	m: {
-		width: 5,
-		height: 3,
-		skip: 3,
-		text: `111101010110101`
-	},
-	n: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `110101101`
-	},
-	o: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `010101010`
-	},
-	p: {
-		width: 3,
-		height: 5,
-		skip: 3,
-		text: `110101110100100`
-	},
-	q: {
-		width: 3,
-		height: 5,
-		skip: 3,
-		text: `011101011001001`
-	},
-	r: {
-		width: 2,
-		height: 3,
-		skip: 3,
-		text: `111010`
-	},
-	s: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `011010110`
-	},
-	t: {
-		width: 2,
-		height: 5,
-		skip: 1,
-		text: `1010111001`
-	},
-	u: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `101101011`
-	},
-	v: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `101101010`
-	},
-	w: {
-		width: 5,
-		height: 3,
-		skip: 3,
-		text: `101011010101010`
-	},
-	x: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `101010101`
-	},
-	y: {
-		width: 3,
-		height: 5,
-		skip: 3,
-		text: `101101011001010`
-	},
-	z: {
-		width: 3,
-		height: 3,
-		skip: 3,
-		text: `110010011`
-	},
-	A: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: "010101111101101"
-	},
-	B: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110101110101110`
-	},
-	C: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `011100100100011`
-	},
-	D: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110101101101110`
-	},
-	E: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111100111100111`
-	},
-	F: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111100111100100`
-	},
-	G: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `011100101101011`
-	},
-	H: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101111101101`
-	},
-	I: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111010010010111`
-	},
-	J: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111001001001110`
-	},
-	K: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101110101101`
-	},
-	L: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `100100100100111`
-	},
-	M: {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1000111011101011000110001`
-	},
-	N: {
-		width: 4,
-		height: 5,
-		skip: 1,
-		text: `10011101101110011001`
-	},
-	O: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `010101101101010`
-	},
-	P: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110101110100100`
-	},
-	Q: {
-		width: 3,
-		height: 6,
-		skip: 1,
-		text: `010101101101010001`
-	},
-	R: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110101110101101`
-	},
-	S: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `011100010001110`
-	},
-	T: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111010010010010`
-	},
-	U: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101101101111`
-	},
-	V: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101101101010`
-	},
-	W: {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1000110101101011010101010`
-	},
-	X: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101010101101`
-	},
-	Y: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101010010010`
-	},
-	Z: {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111001010100111`
-	}
-}
-
-textData.cyrillic = {
-	'а': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `010101111101101`
-	},
-	'б': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111100111101111`
-	},
-	'в': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110101110101110`
-	},
-	'г': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111100100100100`
-	},
-	'д': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `0111001010010101111110001`
-	},
-	'е': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111100111100111`
-	},
-	'ё': {
-		width: 3,
-		height: 7,
-		skip: -1,
-		text: `101000111100111100111`
-	},
-	'ж': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1010110101011101010110101`
-	},
-	'з': {
-		width: 4,
-		height: 5,
-		skip: 1,
-		text: `01101001001010010110`
-	},
-	'и': {
-		width: 4,
-		height: 5,
-		skip: 1,
-		text: `10011001101111011001`
-	},
-	'й': {
-		width: 4,
-		height: 8,
-		skip: -2,
-		text: `01000010000010011001101111011001`
-	},
-	'к': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101110101101`
-	},
-	'л': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `010101101101101`
-	},
-	'м': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1000111011101011000110001`
-	},
-	'н': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101111101101`
-	},
-	'о': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `010101101101010`
-	},
-	'п': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111101101101101`
-	},
-	'р': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `110101110100100`
-	},
-	'с': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111100100100111`
-	},
-	'т': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `111010010010010`
-	},
-	'у': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101010010100`
-	},
-	'ф': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `0010001110101010111000100`
-	},
-	'х': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101010101101`
-	},
-	'ц': {
-		width: 4,
-		height: 6,
-		skip: 1,
-		text: `101010101010101011100011`
-	},
-	'ч': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `101101111001001`
-	},
-	'ш': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1010110101101011010111111`
-	},
-	'щ': {
-		width: 6,
-		height: 6,
-		skip: 1,
-		text: `101010101010101010101010111110000011`
-	},
-	'ъ': {
-		width: 4,
-		height: 5,
-		skip: 1,
-		text: `11000100011101010111`
-	},
-	'ы': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1000110001111011010111101`
-	},
-	'ь': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `100100111101111`
-	},
-	'э': {
-		width: 4,
-		height: 5,
-		skip: 1,
-		text: `01101001001110010110`
-	},
-	'ю': {
-		width: 5,
-		height: 5,
-		skip: 1,
-		text: `1011110101111011010110111`
-	},
-	'я': {
-		width: 3,
-		height: 5,
-		skip: 1,
-		text: `011101011101101`
-	}
-}
+const textData = { newText, cyrillic }
 
 export function updateToolWindow(name) {
-	if (!toolsWindow) {
-		return;
-	}
+	if (!toolsWindow) return;
 	let tool = tools[name];
 	let children = toolsWindow.container.children;
 	for (let i = 0; i < children.length; i++) {
@@ -858,9 +131,9 @@ export function showToolOpts(hide) {
 			let currentBrushSize = tools['cursor'].extra.brushSize;
 			let brushSizeSlider = createSliderOption(opts, `Brush size: ${currentBrushSize}px`, currentBrushSize, (brushSize) => {
 				tools['cursor'].extra.brushSize = brushSize;
-				tools['cursor'].extra.brush = new Brush(0, 0, tools['cursor'].extra.brushSize-1, tools['cursor'].extra.brushSize-1, 0, 0);
+				tools['cursor'].extra.brush = new Brush(0, 0, tools['cursor'].extra.brushSize - 1, tools['cursor'].extra.brushSize - 1, 0, 0);
 				brushSizeSlider.label.innerText = `Brush size: ${brushSize}px`;
-			}, 1, player.rank>=RANK.ARTIST?17:3, true, 1);
+			}, 1, player.rank >= RANK.ARTIST ? 17 : 3, true, 1);
 			windowSys.addWindow(toolOptsWindow);
 			toolOptsWindow.move(toolsWindow.container.parentElement.getBoundingClientRect().x + toolsWindow.container.parentElement.offsetWidth + 5, toolsWindow.container.parentElement.getBoundingClientRect().y);
 			break;
@@ -869,9 +142,7 @@ export function showToolOpts(hide) {
 }
 
 export function updateToolbar(win = toolsWindow) {
-	if (!win) {
-		return;
-	}
+	if (!win) return;
 
 	const container = win.container;
 	const toolButtonClick = name => event => {
@@ -1009,14 +280,14 @@ export const toolsApi = PublicAPI.tools = {
 };
 
 class Brush {
-	constructor(x0, y0, x1, y1, hpx, vpx){
-		this.width = x1-x0+1;
-		this.height = y1-y0+1;
+	constructor(x0, y0, x1, y1, hpx, vpx) {
+		this.width = x1 - x0 + 1;
+		this.height = y1 - y0 + 1;
 		// console.log(this.width, this.height);
-		this.centerX = Math.floor(this.width/2);
-		this.centerY = Math.floor(this.height/2);
+		this.centerX = Math.floor(this.width / 2);
+		this.centerY = Math.floor(this.height / 2);
 
-		this.bitmap = Array.from({length: this.height}, () => Array(this.width).fill(0));
+		this.bitmap = Array.from({ length: this.height }, () => Array(this.width).fill(0));
 
 		this.algoEllipseFill(x0, y0, x1, y1, hpx, vpx, (x1, y, x2) => this.drawHLine(x1, y, x2));
 	}
@@ -1041,21 +312,21 @@ class Brush {
 		hpx = res[4];
 		vpx = res[5];
 		let h = res[6];
-	
+
 		let a = Math.abs(x1 - x0), b = Math.abs(y1 - y0), b1 = b & 1;
 		let dx = 4 * (1.0 - a) * b * b, dy = 4 * (b1 + 1) * a * a;
 		let err = dx + dy + b1 * a * a, e2;
-	
+
 		y0 += (b + 1) / 2;
 		y1 = y0 - b1; // starting pixel
 		a = 8 * a * a;
 		b1 = 8 * b * b;
-	
+
 		let inity0 = y0;
 		let inity1 = y1;
 		let initx0 = x0;
 		let initx1 = x1 + hpx;
-	
+
 		do {
 			cb(x0, y0 + vpx, x1 + hpx);
 			cb(x0, y1, x1 + hpx);
@@ -1071,17 +342,17 @@ class Brush {
 				err += dx += b1;
 			} // x step
 		} while (x0 <= x1);
-	
+
 		while (y0 + vpx - y1 + 1 < h) {           // too early stop of flat ellipses a=1
 			cb(x0 - 1, ++y0 + vpx, x0 - 1); // -> finish tip of ellipse
 			cb(x1 + 1 + hpx, y0 + vpx, x1 + 1 + hpx);
 			cb(x0 - 1, --y1, x0 - 1);
 			cb(x1 + 1 + hpx, y1, x1 + 1 + hpx);
 		}
-	
+
 		if (vpx > 0) {
 			for (let i = inity1 + 1; i < inity0 + vpx; i++)
-			cb(initx0, i, initx1);
+				cb(initx0, i, initx1);
 		}
 	}
 
@@ -1089,7 +360,7 @@ class Brush {
 		// console.log("before: ", x0, y0, x1, y1, hpx, vpx);
 		hpx = Math.max(hpx, 0);
 		vpx = Math.max(vpx, 0);
-	
+
 		if (x0 > x1) {
 			let t;
 			t = x0;
@@ -1104,19 +375,19 @@ class Brush {
 		}
 		let w = x1 - x0 + 1;
 		let h = y1 - y0 + 1;
-	
+
 		let hDiameter = w - hpx;
 		let vDiameter = h - vpx;
-	
+
 		if (w == 8 || w == 12 || w == 22) hpx++;
 		if (h == 8 || h == 12 || h == 22) vpx++;
-	
+
 		hpx = hDiameter > 5 ? hpx : 0;
 		vpx = vDiameter > 5 ? vpx : 0;
-	
+
 		if ((hDiameter % 2 == 0) && (hDiameter > 5)) hpx--;
 		if ((vDiameter % 2 == 0) && (vDiameter > 5)) vpx--;
-	
+
 		x1 -= hpx;
 		y1 -= vpx;
 		// console.log("after: ", x0, y0, x1, y1, hpx, vpx);
@@ -1144,7 +415,7 @@ class Brush {
 	draw(x, y, color) {
 		for (let i = 0; i < this.height; i++) {
 			for (let j = 0; j < this.width; j++) {
-				if(this.bitmap[i][j]) {
+				if (this.bitmap[i][j]) {
 					const px = x + j - this.centerX;
 					const py = y + i - this.centerY;
 					let pixel = misc.world.getPixel(px, py);
@@ -1163,18 +434,18 @@ eventSys.once(e.misc.toolsRendered, () => {
 	addTool(new Tool('Cursor', cursors.cursor, PLAYERFX.RECT_SELECT_ALIGNED(1), RANK.USER,
 		tool => {
 			tool.extra.brushSize = 1;
-			tool.extra.brush = new Brush(0, 0, tool.extra.brushSize-1, tool.extra.brushSize-1, 0, 0);
+			tool.extra.brush = new Brush(0, 0, tool.extra.brushSize - 1, tool.extra.brushSize - 1, 0, 0);
 			let lastX,
-			lastY;
+				lastY;
 			let last1PX;
-            let last1PY;
-            let last2PX;
-            let last2PY;
-            let start;
+			let last1PY;
+			let last2PX;
+			let last2PY;
+			let start;
 			tool.setEvent('mousedown mousemove', (mouse, event) => {
 				let usedButtons = 0b11; /* Left and right mouse buttons are always used... */
 				/* White color if right clicking */
-				
+
 				let color = mouse.buttons === 2 ? player.secondaryColor : player.selectedColor;
 				let brushSize = tool.extra.brushSize - 1 || 0;
 
@@ -1195,10 +466,10 @@ eventSys.once(e.misc.toolsRendered, () => {
 							lastX = mouse.tileX;
 							lastY = mouse.tileY;
 							last1PX = mouse.tileX;
-                            last1PY = mouse.tileY;
-                            last2PX = mouse.tileX;
-                            last2PY = mouse.tileY;
-                            start = true;
+							last1PY = mouse.tileY;
+							last2PX = mouse.tileX;
+							last2PY = mouse.tileY;
+							start = true;
 						}
 						PM.startHistory();
 						line(lastX, lastY, mouse.tileX, mouse.tileY, 1, (x, y) => {
@@ -1337,7 +608,7 @@ eventSys.once(e.misc.toolsRendered, () => {
 					nzoom = options.defaultZoom;
 				}
 				nzoom = Math.round(nzoom);
-				camera.zoom = nzoom;
+				setZoom(nzoom);
 				if (camera.zoom !== lzoom) {
 					moveCameraBy(offX, offY);
 				}
@@ -2219,7 +1490,7 @@ eventSys.once(e.misc.toolsRendered, () => {
 			tool.setEvent('mousedown', (mouse, event) => {
 				let get = {
 					rx() { return mouse.tileX / protocol.chunkSize; },
-					ry() { return mouse.tileY / protocol.chunkSize },
+					ry() { return mouse.tileY / protocol.chunkSize; },
 					x() { return Math.round(mouse.tileX / protocol.chunkSize); },
 					y() { return Math.round(mouse.tileY / protocol.chunkSize); }
 				};
@@ -2403,7 +1674,7 @@ eventSys.once(e.misc.toolsRendered, () => {
 			tool.setEvent('mousedown', (mouse, event) => {
 				let get = {
 					rx() { return mouse.tileX / protocol.chunkSize; },
-					ry() { return mouse.tileY / protocol.chunkSize },
+					ry() { return mouse.tileY / protocol.chunkSize; },
 					x() { return Math.round(mouse.tileX / protocol.chunkSize); },
 					y() { return Math.round(mouse.tileY / protocol.chunkSize); }
 				};

@@ -89,12 +89,10 @@ export class Client {
 	}
 
 	async checkIsLoggedIn() {
-		// console.log(this.accountToken);
 		if(this.ip.ip==="0000:0000:0000:0000:0000:ffff:7f00:0001"){
-			console.log("islocalhostdev")
-			if(this.ip.clients.size<2) this.accountToken = process.env.DEV_TEST_TOKEN;
-			else this.accountToken = process.env.DEV_TEST_TOKEN2;
-			await this.fetchUserInfo();
+			console.log("islocalhostdev");
+			// await this.fetchUserInfo();
+			this.accountInfo = {"data":{"user":{"account":{"id":1,"username":"developer"},"info":{"displayName":"developer"},"owopData":{"global":{"rank":5,"isBanned":0,"banExpiration":0,"banReason":null},"worlds":[{"entryId":0,"id":0,"worldName":"main","rank":5,"isBanned":0,"banExpiration":0,"banReason":null}]}}}};
 			return true;
 		}
 		if(!this.accountToken) {
@@ -587,7 +585,7 @@ export class Client {
 			}
 			//set pixel
 			case 11: {
-				if (this.rank < 1) return
+				if (this.rank < 1) return;
 				let x = message.readInt32LE(0);
 				if (x > maxPixelCoord || x < minPixelCoord) {
 					this.destroy();
@@ -702,7 +700,7 @@ export class Client {
 					if (++this.deferredAmount >= 100000 && this.rank < 3) {
 						this.destroy();
 					}
-					return
+					return;
 				}
 				region.eraseChunk((chunkY & 0xf) << 4 | chunkX & 0xf, message[8], message[9], message[10]);
 				return;

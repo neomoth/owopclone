@@ -1,10 +1,10 @@
-import { EVENTS as e, RANK } from "../conf.js";
-import { eventSys } from "../global.js";
-import { misc, mouse, PM } from "../main.js";
-import { player } from "../local_player.js";
-import { net } from "../networking.js";
-import { centerCameraTo } from "../canvas_renderer.js";
-import { colorUtils as color } from "../util/color.js";
+"use strict";
+
+import { colorUtils as color, eventSys } from "./util.js";
+import { EVENTS as e, RANK, misc, mouse } from "./conf.js";
+import { player } from "./local_player.js";
+import { net } from "./networking.js";
+import { centerCameraTo } from "./canvas_renderer.js";
 
 class Point {
 	constructor(x, y) {
@@ -18,18 +18,18 @@ class Point {
 	}
 }
 
-class BPoint extends Point {
-	constructor(x, y) {
-		super(x, y);
-		this.bottom = false;
-		this.right = false;
-	}
-	static check(bp1, bp2, direction) {
-		let p1 = PM.queue[`${bp1.x},${bp1.y}`];
-		let p2 = PM.queue[`${bp2.x},${bp2.y}`];
-		return bp1[direction] = (!!p1 && !p2) || (!p1 && !!p2);
-	}
-}
+// class BPoint extends Point {
+// 	constructor(x, y) {
+// 		super(x, y);
+// 		this.bottom = false;
+// 		this.right = false;
+// 	}
+// 	static check(bp1, bp2, direction) {
+// 		let p1 = PM.queue[`${bp1.x},${bp1.y}`];
+// 		let p2 = PM.queue[`${bp2.x},${bp2.y}`];
+// 		return bp1[direction] = (!!p1 && !p2) || (!p1 && !!p2);
+// 	}
+// }
 
 class Pixel extends Point {
 	constructor(x, y, c, o = false) {
@@ -120,8 +120,7 @@ export class PixelManager {
 		}
 		this.extra.placeData.sort((a, b) => a[0] - b[0]);
 		this.extra.chunkPlaceData.sort((a, b) => a[0] - b[0]);
-	}
-	setup() {
+
 		eventSys.on(e.tick, () => {
 			this.enabled ? this.placePixel() : void 0;
 		});
@@ -168,21 +167,21 @@ export class PixelManager {
 	}
 	updateBorder(x, y) {
 		let p = this.border[`${x},${y}`];
-		if (!p) p = this.border[`${x},${y}`] = new BPoint(x, y);
+		// if (!p) p = this.border[`${x},${y}`] = new BPoint(x, y);
 
 		let t = this.border[`${x},${y - 1}`];
 		let l = this.border[`${x - 1},${y}`];
 		let b = this.border[`${x},${y + 1}`];
 		let r = this.border[`${x + 1},${y}`];
 
-		if (!t) t = new BPoint(x, y - 1);
-		if (!l) l = new BPoint(x - 1, y);
-		if (!b) b = new BPoint(x, y + 1);
-		if (!r) r = new BPoint(x + 1, y);
-		if (BPoint.check(t, p, "bottom") && (t.bottom || t.right)) this.border[`${x},${y - 1}`] = t;
-		if (BPoint.check(l, p, "right") && (l.bottom || l.right)) this.border[`${x - 1},${y}`] = l;
-		if (BPoint.check(p, b, "bottom") && (b.bottom || b.right)) this.border[`${x},${y + 1}`] = b;
-		if (BPoint.check(p, r, "right") && (r.bottom || r.right)) this.border[`${x + 1},${y}`] = r;
+		// if (!t) t = new BPoint(x, y - 1);
+		// if (!l) l = new BPoint(x - 1, y);
+		// if (!b) b = new BPoint(x, y + 1);
+		// if (!r) r = new BPoint(x + 1, y);
+		// if (BPoint.check(t, p, "bottom") && (t.bottom || t.right)) this.border[`${x},${y - 1}`] = t;
+		// if (BPoint.check(l, p, "right") && (l.bottom || l.right)) this.border[`${x - 1},${y}`] = l;
+		// if (BPoint.check(p, b, "bottom") && (b.bottom || b.right)) this.border[`${x},${y + 1}`] = b;
+		// if (BPoint.check(p, r, "right") && (r.bottom || r.right)) this.border[`${x + 1},${y}`] = r;
 	}
 	undo() {
 		if (!this.enabled) return;
@@ -258,23 +257,23 @@ export class PixelManager {
 	}
 	setPixel(x, y, c, placeOnce = false) {
 		if (!this.enabled) return misc.world.setPixel(x, y, c);
-	
+
 		this.ignoreProtectedChunks = player.rank >= RANK.MODERATOR;
-	
+
 		if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
 		if (!Array.isArray(c) || c.length < 3 || c.length > 4) return false;
-	
+
 		// Ensure color values are valid
 		c = c.slice(0, 3); // Remove alpha if present
 		for (let i = 0; i < c.length; i++) {
 			if (!Number.isInteger(c[i]) || c[i] < 0 || c[i] > 255) return false;
 		}
-	
+
 		const p = new Pixel(x, y, c, placeOnce);
 		const chunkKey = p.cx + "," + p.cy;
-	
+
 		if (!this.ignoreProtectedChunks && misc.world.protectedChunks[chunkKey]) return false;
-	
+
 		if (this.record) {
 			const stack = this.actionStack[x + "," + y];
 			if (!(stack instanceof Action)) {
@@ -286,61 +285,60 @@ export class PixelManager {
 				stack.after_color = c;
 			}
 		}
-	
+
 		// **Immediate update in the world**
 		misc.world.setPixel(x, y, c);
-	
+
 		// **Queue Processing to Maintain Undo/Redo and Chunk Logic**
 		this.queue[p.x + "," + p.y] = p;
 		if (!this.chunkQueue[chunkKey]) this.chunkQueue[chunkKey] = new Chunk(p);
 		this.chunkQueue[chunkKey].setPixel(p);
-	
+
 		this.moveQueue[chunkKey] = true;
 		this.updateBorder(p.x, p.y);
-	
+
 		this.checkMove = true;
 		return true;
 	}
-	
 	getPixel(x, y, a = true) {
 		if (!Number.isInteger(x) || !Number.isInteger(y)) {
 			console.error('Invalid inputs for "getPixel" on PixelManager instance.');
 			return undefined;
 		}
-	
+
 		if (a && this.queue && this.queue[x + "," + y] && this.queue[x + "," + y].c) {
 			return this.queue[x + "," + y].c;
 		}
-	
+
 		if (typeof misc.world.getPixel === "function") {
 			return misc.world.getPixel(x, y);
 		}
-		
+
 		return undefined;
 	}
-	
+	// this is an internal function to place pixels every tick.
 	placePixel() {
 		if (player.rank >= RANK.MODERATOR && this.enableMod) {
 			const cx = Math.floor(mouse.tileX / 16);
 			const cy = Math.floor(mouse.tileY / 16);
-	
+
 			for (let i = 0; i < this.extra.chunkPlaceData.length; i++) {
 				const e = this.extra.chunkPlaceData[i][1];
 				const xchunk = cx + e.x;
 				const ychunk = cy + e.y;
 				const chunkKey = xchunk + "," + ychunk;
 				const currentChunk = this.chunkQueue[chunkKey];
-	
+
 				if (!currentChunk || currentChunk.placed || Date.now() - currentChunk.t <= 1) continue;
-	
+
 				if (!net.protocol.setChunk(xchunk, ychunk, currentChunk.data)) break;
-	
+
 				for (let j = 0; j < currentChunk.pixels.length; j++) {
 					if (currentChunk.pixels[j]) {
 						currentChunk.pixels[j].placed = true;
 					}
 				}
-	
+
 				currentChunk.placed = true;
 			}
 		} else {
@@ -348,20 +346,20 @@ export class PixelManager {
 			const tY = mouse.tileY;
 			const xcc = Math.floor(tX / 16) * 16;
 			const ycc = Math.floor(tY / 16) * 16;
-	
+
 			for (let i = 0; i < this.extra.placeData.length; i++) {
 				const e = this.extra.placeData[i][1];
 				const p = this.queue[(tX + e.x) + "," + (tY + e.y)];
 				if (!p) continue;
-	
+
 				const chunkKey = p.cx + "," + p.cy;
 				if (!this.ignoreProtectedChunks && misc.world.protectedChunks[chunkKey]) continue;
-	
+
 				if (p.x < (xcc - 31) || p.y < (ycc - 31) || p.x > (xcc + 46) || p.y > (ycc + 46)) continue;
-	
+
 				const c = this.getPixel(p.x, p.y, 0);
 				if (!c) continue;
-	
+
 				if (p.c.int !== color.toInt(c)) {
 					if (!p.placed) {
 						p.placed = misc.world.setPixel(p.x, p.y, p.c);
@@ -378,3 +376,5 @@ export class PixelManager {
 		this.moveToNext();
 	}
 }
+
+export const PM = new PixelManager;

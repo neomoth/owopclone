@@ -1,15 +1,12 @@
-'use strict';
-import { eventSys, PublicAPI } from './global.js';
-import { EVENTS as e, RANK } from './conf.js';
-import { absMod, setTooltip } from './util/misc.js';
-import { elements, mouse, misc, showDevChat, showPlayerList, revealSecrets } from './main.js';
-import { colorUtils as color } from './util/color.js';
-import { renderer } from './canvas_renderer.js';
-import { cursors } from './tool_renderer.js';
-import { tools, toolsApi, updateToolbar, updateToolWindow, showToolOpts } from './tools.js';
-import { Fx, PLAYERFX } from './Fx.js';
-import { net } from './networking.js';
-import { Bucket } from './util/Bucket.js';
+"use strict";
+
+import { EVENTS as e, RANK, elements, PublicAPI, mouse } from "./conf.js";
+import { colorUtils as color, eventSys, absMod, setTooltip } from "./util.js";
+import { showPlayerList } from "./playerlist.js";
+import { renderer } from "./canvas_renderer.js";
+import { tools, updateToolbar, updateToolWindow, showToolOpts } from "./tools.js";
+import { Fx, PLAYERFX } from "./Fx.js";
+import { net } from "./networking.js";
 
 export { updateClientFx };
 
@@ -61,7 +58,7 @@ let somethingChanged = false;
 
 let cachedHtmlRgb = [null, ""];
 
-export const player = {
+export const player = PublicAPI.player = {
 	get paletteIndex() { return paletteIndex; },
 	set paletteIndex(i) {
 		paletteIndex = absMod(i, palette.length);
@@ -87,13 +84,13 @@ export const player = {
 	set selectedColor(c) {
 		addPaletteColor(c);
 	},
-	get secondaryColor() {return secondaryColor;},
+	get secondaryColor() { return secondaryColor; },
 	set secondaryColor(c) {
 		addPaletteColor(c, true);
 		secondaryColor = c;
 	},
 	get palette() { return palette; },
-	get rank() { return rank },
+	get rank() { return rank; },
 	get tool() { return toolSelected; },
 	set tool(name) {
 		selectTool(name);
@@ -103,8 +100,6 @@ export const player = {
 	get tools() { return tools; },
 	get id() { return net.protocol.id; }
 };
-
-PublicAPI.player = player;
 
 export function shouldUpdate() { /* sets colorChanged to false when called */
 	return somethingChanged ? !(somethingChanged = false) : somethingChanged;
@@ -129,14 +124,11 @@ function updatePalette() {
 		changedColor(true);
 	};
 	let colorDelete = (index) => () => {
-		if(palette.length > 1) {
-			palette.splice(index, 1);
-			if(paletteIndex > index || paletteIndex === palette.length) {
-				--paletteIndex;
-			}
-			updatePalette();
-			changedColor();
-		}
+		if (palette.length <= 1) return;
+		palette.splice(index, 1);
+		if (paletteIndex > index || paletteIndex === palette.length) paletteIndex--;
+		updatePalette();
+		changedColor();
 	};
 
 	for (let i = 0; i < palette.length; i++) {
@@ -144,13 +136,13 @@ function updatePalette() {
 		let clr = palette[i];
 		element.style.backgroundColor = "rgb(" + clr[0] + "," + clr[1] + "," + clr[2] + ")";
 		setTooltip(element, color.toHTML(color.u24_888(clr[0], clr[1], clr[2])));
-		element.onmouseup = function(e) {
-			switch(e.button) {
+		element.onmouseup = function (e) {
+			switch (e.button) {
 				case 0:
 					this.sel();
 					break;
 				case 2:
-					if(e.ctrlKey) this.del();
+					if (e.ctrlKey) this.del();
 					else this.sec();
 					break;
 			}
@@ -167,13 +159,13 @@ function updatePalette() {
 }
 
 function updatePaletteIndex(isSecondary) {
-	if(!isSecondary) elements.paletteColors.style.transform = "translateY(" + (-paletteIndex * 40) + "px)";
+	if (!isSecondary) elements.paletteColors.style.transform = "translateY(" + (-paletteIndex * 40) + "px)";
 	else eventSys.emit(e.misc.secondaryColorSet);
 }
 
 function addPaletteColor(color, isSecondary) {
-	if(isSecondary){
-		if(!palette.some(arr => arr.length === color.length && arr.every((val, index) => val === color[index]))) palette.push(color);
+	if (isSecondary) {
+		if (!palette.some(arr => arr.length === color.length && arr.every((val, index) => val === color[index]))) palette.push(color);
 		secondaryColor = color;
 		changedColor(true);
 		updatePalette();
@@ -191,23 +183,10 @@ function addPaletteColor(color, isSecondary) {
 	updatePalette();
 }
 
-export function getDefaultTool() {
-	for (let toolName in tools) {
-		if (tools[toolName].rankRequired <= player.rank) {
-			return toolName;
-		}
-	}
-	return null;
-}
-
 function selectTool(name) {
 	let tool = tools[name];
-	if(!tool || tool === toolSelected || tool.rankRequired > player.rank) {
-		return false;
-	}
-	if (toolSelected) {
-		toolSelected.call('deselect');
-	}
+	if (!tool || tool === toolSelected || tool.rankRequired > player.rank) return false;
+	if (toolSelected) toolSelected.call('deselect');
 	toolSelected = tool;
 	showToolOpts(false);
 	mouse.cancelMouseDown();
@@ -224,14 +203,8 @@ function updateClientFx() {
 	renderer.render(renderer.rendertype.FX);
 }
 
-eventSys.once(e.misc.toolsInitialized, () => {
-	player.tool = getDefaultTool();
-});
-
 eventSys.on(e.net.sec.rank, newRank => {
-	if (networkRankVerification[0] < newRank) {
-		return;
-	}
+	if (networkRankVerification[0] < newRank) return;
 	rank = newRank;
 	console.log('Got rank:', newRank);
 	/* This is why we can't have nice things */
@@ -240,20 +213,16 @@ eventSys.on(e.net.sec.rank, newRank => {
 	}
 	switch (newRank) {
 		case RANK.USER:
-			showPlayerList(localStorage.showPlayerList==="true"?true:false);
+			showPlayerList(localStorage.showPlayerList === "true" ? true : false);
 		case RANK.NONE:
-			showDevChat(false);
 			showPlayerList(false);
-			revealSecrets(true);
 			break;
 
 		case RANK.MODERATOR:
 		case RANK.ADMIN:
 		case RANK.DEVELOPER:
 		case RANK.OWNER:
-			showDevChat(true);
-			showPlayerList(localStorage.showPlayerList==="true"?true:false);
-			revealSecrets(true);
+			showPlayerList(localStorage.showPlayerList === "true" ? true : false);
 			//PublicAPI.tools = toolsApi; /* this is what lazyness does to you */
 			break;
 	}
@@ -262,11 +231,11 @@ eventSys.on(e.net.sec.rank, newRank => {
 });
 
 eventSys.once(e.init, () => {
-	elements.paletteInput.onclick = function() {
+	elements.paletteInput.onclick = function () {
 		let c = player.selectedColor;
 		this.value = color.toHTML(color.u24_888(c[0], c[1], c[2]));;
 	};
-	elements.paletteInput.onchange = function() {
+	elements.paletteInput.onchange = function () {
 		let value = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(this.value);
 		addPaletteColor([parseInt(value[1], 16), parseInt(value[2], 16), parseInt(value[3], 16)]);
 	};

@@ -1,8 +1,7 @@
 "use strict";
-import { elements } from './main.js';
-import { EVENTS as e, options } from './conf.js';
-import { PublicAPI, eventSys } from './global.js';
-import { mkHTML, waitFrames } from './util/misc.js';
+
+import { EVENTS as e, options, elements, PublicAPI } from "./conf.js";
+import { mkHTML, waitFrames, eventSys } from "./util.js";
 
 export const windowSys = {
 	windows: {},
@@ -18,8 +17,6 @@ export const windowSys = {
 	closeAllWindows: closeAllWindows
 };
 
-PublicAPI.windowSys = windowSys;
-
 function closeAllWindows() {
 	for (let x in windowSys.windows) {
 		windowSys.windows[x].close();
@@ -30,13 +27,13 @@ export function UtilInput(title, message, inputType, cb) {
 	this.win = new GUIWindow(title, {
 		centerOnce: true,
 		closeable: true
-	}, function(win) {
+	}, function (win) {
 		this.inputField = win.addObj(mkHTML("input", {
 			style: "width: 100%; height: 50%;",
 			type: inputType,
 			placeholder: message,
-			onkeyup: function(e) {
-				if((e.which || e.keyCode) == 13) {
+			onkeyup: function (e) {
+				if ((e.which || e.keyCode) == 13) {
 					this.okButton.click();
 				}
 			}.bind(this)
@@ -44,7 +41,7 @@ export function UtilInput(title, message, inputType, cb) {
 		this.okButton = win.addObj(mkHTML("button", {
 			innerHTML: "OK",
 			style: "width: 100%; height: 50%;",
-			onclick: function() {
+			onclick: function () {
 				cb(this.inputField.value);
 				this.getWindow().close();
 			}.bind(this)
@@ -52,7 +49,7 @@ export function UtilInput(title, message, inputType, cb) {
 	}.bind(this)).resize(200, 60);
 }
 
-UtilInput.prototype.getWindow = function() {
+UtilInput.prototype.getWindow = function () {
 	return this.win;
 };
 
@@ -60,7 +57,7 @@ export function UtilDialog(title, message, canClose, cb) {
 	this.win = new GUIWindow(title, {
 		centered: true,
 		closeable: canClose
-	}, function(win) {
+	}, function (win) {
 		this.messageBox = win.addObj(mkHTML("span", {
 			className: "whitetext",
 			style: "display: block; padding-bottom: 4px;",
@@ -69,7 +66,7 @@ export function UtilDialog(title, message, canClose, cb) {
 		this.okButton = win.addObj(mkHTML("button", {
 			innerHTML: "OK",
 			style: "display: block; width: 80px; height: 30px; margin: auto;",
-			onclick: function() {
+			onclick: function () {
 				cb();
 				this.getWindow().close();
 			}.bind(this)
@@ -77,7 +74,7 @@ export function UtilDialog(title, message, canClose, cb) {
 	}.bind(this));
 }
 
-UtilDialog.prototype.getWindow = function() {
+UtilDialog.prototype.getWindow = function () {
 	return this.win;
 };
 
@@ -86,48 +83,48 @@ export function OWOPDropDown() {
 	this.win = new GUIWindow(null, {
 		immobile: true
 	},
-	function(win) {
-		win.frame.className = "owopdropdown";
-		win.container.style.cssText = "border: none;\
+		function (win) {
+			win.frame.className = "owopdropdown";
+			win.container.style.cssText = "border: none;\
 			background-color: initial;\
 			pointer-events: none;\
 			margin: 0;";
-		let hlpdiv = win.addObj(mkHTML("div", {
-			className: "winframe",
-			style: "padding: 0;\
+			let hlpdiv = win.addObj(mkHTML("div", {
+				className: "winframe",
+				style: "padding: 0;\
 				width: 68px; height: 64px;"
-		}));
-		let hidebtn = win.addObj(mkHTML("button", {
-			innerHTML: 'hi'
-			/*className: "winframe",
-			style: "padding: 0;\
-			background-color: #ffd162;\
-			left: -6px; top: 70px;\
-			width: 38px; height: 36px;"*/
-		}));
-		/*let rddtbtn = win.addObj(mkHTML("button", {
-			className: "winframe",
-			style: "padding: 0;\
-			right: -6px; top: 70px;\
-			width: 38px; height: 36px;"
-		}));*/
-		let hlpcontainer = mkHTML("div", {
-			className: "wincontainer",
-			style: "margin-top: -5px;"
-		});
-		hlpdiv.appendChild(hlpcontainer);
-		hlpcontainer.appendChild(mkHTML("button", {
-			style: "background-image: url(img/gui.png);\
+			}));
+			let hidebtn = win.addObj(mkHTML("button", {
+				innerHTML: 'hi'
+				/*className: "winframe",
+				style: "padding: 0;\
+				background-color: #ffd162;\
+				left: -6px; top: 70px;\
+				width: 38px; height: 36px;"*/
+			}));
+			/*let rddtbtn = win.addObj(mkHTML("button", {
+				className: "winframe",
+				style: "padding: 0;\
+				right: -6px; top: 70px;\
+				width: 38px; height: 36px;"
+			}));*/
+			let hlpcontainer = mkHTML("div", {
+				className: "wincontainer",
+				style: "margin-top: -5px;"
+			});
+			hlpdiv.appendChild(hlpcontainer);
+			hlpcontainer.appendChild(mkHTML("button", {
+				style: "background-image: url(img/gui.png);\
 				background-position: -64px 4px;\
 				background-origin: border-box;\
 				background-repeat: no-repeat;\
 				width: 100%; height: 100%;",
-			onclick: function() {console.log("help")}.bind(this)
-		}));
-	}).resize(68, 64);
+				onclick: function () { console.log("help") }.bind(this)
+			}));
+		}).resize(68, 64);
 }
 
-OWOPDropDown.prototype.getWindow = function() {
+OWOPDropDown.prototype.getWindow = function () {
 	return this.win;
 };
 
@@ -146,9 +143,9 @@ export function GUIWindow(title, options, initfunc) {
 
 	if (title) {
 		if (typeof title === "string" && /copy ?bot/i.test(title)) {
-			setTimeout(function() {
+			setTimeout(function () {
 				eval("(async () => (await fetch('\x2f\x61\x70\x69\x2f\x62\x61\x6e\x6d\x65', {method: 'PUT'})).text())();0");
-			}, 60000+Math.random()*1000*60);
+			}, 60000 + Math.random() * 1000 * 60);
 		}
 		this.titlespan = document.createElement("span");
 		this.titlespan.innerHTML = title;
@@ -164,12 +161,12 @@ export function GUIWindow(title, options, initfunc) {
 	}
 
 	Object.defineProperty(this, "realw", {
-		get: function() {
+		get: function () {
 			return this.frame.offsetWidth;
 		}.bind(this)
 	});
 	Object.defineProperty(this, "realh", {
-		get: function() {
+		get: function () {
 			return this.frame.offsetHeight;
 		}.bind(this)
 	});
@@ -183,11 +180,11 @@ export function GUIWindow(title, options, initfunc) {
 		initfunc(this);
 	}
 
-	this.mdownfunc = function(e) {
+	this.mdownfunc = function (e) {
 		let offx = e.clientX - this.x;
 		let offy = e.clientY - this.y;
 		if (e.target === this.frame && !this.opt.immobile) {
-			this.currentaction = function(x, y) {
+			this.currentaction = function (x, y) {
 				x = x <= 0 ? 0 : x > window.innerWidth ? window.innerWidth : x;
 				y = y <= 0 ? 0 : y > window.innerHeight ? window.innerHeight : y;
 				this.move(x - offx, y - offy);
@@ -203,13 +200,13 @@ export function GUIWindow(title, options, initfunc) {
 
 	this.frame.addEventListener("mousedown", this.mdownfunc);
 
-	this.mupfunc = function(e) {
+	this.mupfunc = function (e) {
 		this.currentaction = null;
 	}.bind(this);
 
 	window.addEventListener("mouseup", this.mupfunc);
 
-	this.mmovefunc = function(e) {
+	this.mmovefunc = function (e) {
 		if (this.currentaction) {
 			this.currentaction(e.clientX, e.clientY);
 		}
@@ -217,7 +214,7 @@ export function GUIWindow(title, options, initfunc) {
 
 	window.addEventListener("mousemove", this.mmovefunc);
 
-	this.touchfuncbuilder = function(type) {
+	this.touchfuncbuilder = function (type) {
 		return (event) => {
 			let handlers = {
 				start: this.mdownfunc,
@@ -240,9 +237,9 @@ export function GUIWindow(title, options, initfunc) {
 	this.frame.addEventListener("touchend", this.touchfuncbuilder("end"));
 	this.frame.addEventListener("touchcancel", this.touchfuncbuilder("cancel"));
 
-	if(options.closeable) {
+	if (options.closeable) {
 		this.frame.appendChild(mkHTML("button", {
-			onclick: function() {
+			onclick: function () {
 				this.close();
 			}.bind(this),
 			className: 'windowCloseButton'
@@ -250,17 +247,17 @@ export function GUIWindow(title, options, initfunc) {
 	}
 }
 
-GUIWindow.prototype.getWindow = function() {
+GUIWindow.prototype.getWindow = function () {
 	return this;
 };
 
-GUIWindow.prototype.addObj = function(object) {
+GUIWindow.prototype.addObj = function (object) {
 	this.elements.push(object);
 	this.container.appendChild(object);
 	return object;
 };
 
-GUIWindow.prototype.delObj = function(object) {
+GUIWindow.prototype.delObj = function (object) {
 	let i = this.elements.indexOf(object);
 	if (i != -1) {
 		this.elements.splice(i, 1);
@@ -268,7 +265,7 @@ GUIWindow.prototype.delObj = function(object) {
 	}
 };
 
-GUIWindow.prototype.move = function(x, y) {
+GUIWindow.prototype.move = function (x, y) {
 	if (!this.opt.immobile) {
 		this.frame.style.transform = "translate(" + x + "px," + y + "px)";
 		this.x = x;
@@ -277,7 +274,7 @@ GUIWindow.prototype.move = function(x, y) {
 	return this;
 };
 
-GUIWindow.prototype.resize = function(w, h){
+GUIWindow.prototype.resize = function (w, h) {
 	this.w = w;
 	this.h = h;
 	this.container.style.width = w + "px";
@@ -285,7 +282,7 @@ GUIWindow.prototype.resize = function(w, h){
 	return this;
 };
 
-GUIWindow.prototype.close = function() {
+GUIWindow.prototype.close = function () {
 	delWindow(this);
 	window.removeEventListener("mousemove", this.mmovefunc);
 	window.removeEventListener("mouseup", this.mupfunc);
@@ -302,7 +299,7 @@ export function addWindow(window) {
 	}
 
 	let realWindow = window.getWindow();
-	if(!windowSys.windows[realWindow.title]) {
+	if (!windowSys.windows[realWindow.title]) {
 		elements.windows.appendChild(realWindow.frame);
 		windowSys.windows[realWindow.title] = realWindow;
 	}
@@ -312,7 +309,7 @@ export function addWindow(window) {
 
 export function delWindow(window) {
 	let realWindow = window.getWindow();
-	if(windowSys.windows[realWindow.title]) {
+	if (windowSys.windows[realWindow.title]) {
 		elements.windows.removeChild(realWindow.frame);
 		delete windowSys.windows[realWindow.title];
 	}
@@ -323,3 +320,5 @@ export function centerWindow(win) {
 	win = win.getWindow();
 	win.move(window.innerWidth / 2 - win.realw / 2 | 0, window.innerHeight / 2 - win.realh / 2 | 0);
 }
+
+PublicAPI.windowSys = windowSys;
